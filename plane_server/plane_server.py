@@ -1,101 +1,61 @@
+# /usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import socket
+import threading
 import pygame
-from plane_sprites import *
+import time
+import os 
 
+""" game setting"""
+# screen
 
-class PlaneGame(object):
-    def __init__(self):
-        print("start init")
+# create enemy event
+ENEMY_EVENT_PERIOD = "1000"
+# fire
+HERO_FIRE_EVENT_PERIOD = "500"
 
-        #1.create screen
-        self.screen = pygame.display.set_mode(SCREEN_RECT.size)
-        self.clock = pygame.time.Clock()
+game_setting = [ENEMY_EVENT_PERIOD, HERO_FIRE_EVENT_PERIOD]
 
-        self.creat_sprites()
+""" tcplink """
+def tcplink(client_conn, addr, game_setting):
+    print ("the new client is ", addr)
 
-        pygame.time.set_timer(CREATE_ENEMY_EVENT,1000)
+    while True:
+        # start game
+        print ("wait new msg")
+        raw_msg = client_conn.recv(1024)
+        if not raw_msg:
+            break
+        msg = raw_msg.decode("UTF-8").split()[0]
+        print ("msg of client",msg)
 
-        pygame.time.set_timer(HERO_FIRE_EVENT,200)
+        # send init game_setting ; pictures to do
+        if msg == "start":
+            print ("start to send msg")
+            for data in game_setting:
+                time.sleep(0.2)
+                client_conn.send(data.encode("UTF-8"))
+            print ("send game setting")
+        # get clietn score todo 
 
-        print("init ok")
-
-    def start_game(self):
-        while True:
-            # set zhen
-            self.clock.tick(1000)
-
-            self.event_handler()
-
-            self.check_collide()
-
-            self.update_sprites()
-
-            pygame.display.update()
-
-
-    def creat_sprites(self):
-        bg1 = Background()
-        bg2 = Background(True)
+        # game over todo
         
-        # background
-        self.back_group = pygame.sprite.Group(bg1,bg2)
-        # hero
-        self.hero = Hero()
-        self.hero_group = pygame.sprite.Group(self.hero)
-        # enemy
-        self.enemy_group = pygame.sprite.Group()
-        
-    def event_handler(self):
+    print("disconnect the client of ",addr)
+    client_conn.close()
 
-        for event in pygame.event.get():
+"""comunicate with socket"""
+plane_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# set host port
+host = socket.gethostname()
+port = 9999
+# socket bind port
+plane_socket.bind((host, port))
+plane_socket.listen(5)
 
-            keys_pressed = pygame.key.get_pressed()
-            #控制飞机移动
-            if keys_pressed[pygame.K_LEFT]:
-                self.hero.move = False
-                self.hero.speed = -9
-            elif keys_pressed[pygame.K_RIGHT]:
-                self.hero.move = False
-                self.hero.speed = 9
-            elif keys_pressed[pygame.K_UP]:
-                self.hero.move = True
-                self.hero.speed = -9
-            elif keys_pressed[pygame.K_DOWN]:
-                self.hero.move = True
-                self.hero.speed = 9
-            else:
-                self.hero.speed = 0
-
-            # create enemy
-            if event.type == CREATE_ENEMY_EVENT:
-                self.enemy_group.add(Enemy())
-            # fire
-            elif event.type == HERO_FIRE_EVENT:
-                    self.hero.fire()
-            # quit
-            elif event.type == pygame.QUIT:
-                self.game_over()
-
-    # update sprites
-    def update_sprites(self):
-        for x in[self.back_group,self.enemy_group,self.hero_group,self.hero.bullet]:
-            x.update()
-            x.draw(self.screen)
-
-    def check_collide(self):
-
-        pygame.sprite.groupcollide( self.enemy_group,self.hero.bullet, True, True)
-        herodown = pygame.sprite.spritecollide( self.hero, self.enemy_group, True)
-
-        if len(herodown)>0:
-            self.hero.kill()
-            PlaneGame.game_over()
-
-    @staticmethod
-    def game_over():
-        print("Game Over!")
-        pygame.quit()
-        exit()
-        
-if __name__ == "__main__":
-    game = PlaneGame()
-    game.start_game()
+while True:
+    # create client connect
+    client_conn, addr = plane_socket.accept()
+    # create new thread to deal with tcp link
+    t = threading.Thread(target= tcplink, args = (client_conn, addr, game_setting))
+    t.start()
