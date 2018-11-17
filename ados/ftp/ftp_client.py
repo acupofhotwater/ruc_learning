@@ -29,7 +29,7 @@ while True:
         client.send('client is ready'.encode("UTF-8"))
         print("start recv file")
         received_size = 0
-        filename = "/home/zh/Documents/ados/test/ftp_test/" + "new" + cmd.split(" ")[1]
+        filename = "/home/acupofwater/Documents/ados/test/ftp_test/" + "new" + cmd.split(" ")[1]
         f = open(filename,'wb')
         while received_size < file_total_size:
             data = client.recv(1024)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 import socket
 import threading
@@ -16,7 +16,9 @@ def tcplink(conn, addr):
             break
         cmd,c_filename = data.decode().split()
         print('文件名是：',c_filename)
-        filename = os.path.join("/home/zh/Desktop", c_filename)
+        filename = os.path.join("/home/acupofwater/Desktop", c_filename)
+        print (filename)
+        print (os.path.isfile(filename))
         if os.path.isfile(filename):
             # send file size to client
             file_size = os.path.getsize(filename)
@@ -50,6 +52,6 @@ while True:
     #create client connect
     conn,addr = server.accept()
 
-    # 创建新线程来处理TCP连接:
+    # TCP:
     t = threading.Thread(target=tcplink, args=(conn, addr))
     t.start()
